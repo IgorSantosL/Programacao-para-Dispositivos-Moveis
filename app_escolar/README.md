@@ -253,31 +253,6 @@ npm install --save-dev babel-preset-expo
 
 ---
 
-## Observações importantes
-
-- `node_modules` não sobe para o GitHub porque está no `.gitignore`
-- a pasta `.expo` também não deve ser versionada
-- se o projeto der erro após trocar dependências, tente:
-
-```bash
-npm install
-npx expo start -c
-```
-
----
-
-## Próximas melhorias possíveis
-
-- persistência local ou banco de dados
-- integração com API REST
-- listagem dos cadastros realizados
-- edição e exclusão de registros
-- máscaras de telefone e CEP
-- selects para curso, semestre e professor
-- prevenção de duplicidade de matrícula e email
-
----
-
 ## Autor
 
-Projeto desenvolvido para a disciplina de **Programação para Dispositivos Móveis I**, seguindo a proposta do **App Scholar**.
+Igor Lima
