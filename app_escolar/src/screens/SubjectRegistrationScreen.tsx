@@ -1,23 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import ScreenContainer from '../components/ScreenContainer';
 import SectionTitle from '../components/SectionTitle';
-import { mockCourses, mockSemesters, mockTeachers } from '../services/mockData';
-import { Subject } from '../types';
+import SelectField from '../components/SelectField';
+import { useAuth } from '../hooks/useAuth';
+import { createSubject, listSubjects, listTeachers } from '../services/academicService';
 import { colors } from '../styles/colors';
+import { Subject } from '../types';
 
 interface SubjectErrors {
   name: string;
   workload: string;
-  teacher: string;
+  teacherId: string;
   course: string;
   semester: string;
 }
@@ -26,6 +22,7 @@ const initialForm: Subject = {
   name: '',
   workload: '',
   teacher: '',
+  teacherId: undefined,
   course: '',
   semester: '',
 };
@@ -33,7 +30,7 @@ const initialForm: Subject = {
 const initialErrors: SubjectErrors = {
   name: '',
   workload: '',
-  teacher: '',
+  teacherId: '',
   course: '',
   semester: '',
 };
@@ -44,205 +41,159 @@ function onlyNumbers(value: string) {
 
 function isTextFieldValid(value: string) {
   const trimmed = value.trim();
-
-  if (trimmed.length < 2) return false;
-  if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(trimmed)) return false;
-  if (/^[\d\s\W_]+$/u.test(trimmed)) return false;
-
-  return true;
-}
-
-function isValidSemester(value: string) {
-  const trimmed = value.trim();
-
-  // Aceita padrão tipo "1º Semestre", "2 Semestre", "3 semestre"
-  return /^\d{1,2}\s*º?\s*semestre$/i.test(trimmed);
+  return trimmed.length >= 2 && /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(trimmed) && !/^[\d\s\W_]+$/u.test(trimmed);
 }
 
 export default function SubjectRegistrationScreen() {
+  const { token } = useAuth();
   const [form, setForm] = useState<Subject>(initialForm);
   const [errors, setErrors] = useState<SubjectErrors>(initialErrors);
-  const [teacherSuggestions, setTeacherSuggestions] = useState<string[]>([]);
-  const [courseSuggestions, setCourseSuggestions] = useState<string[]>([]);
-  const [semesterSuggestions, setSemesterSuggestions] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function loadDependencies() {
+    if (!token) return;
+
+    try {
+      const [subjectsResponse, teachersResponse] = await Promise.all([
+        listSubjects(token),
+        listTeachers(token),
+      ]);
+      setSubjects(subjectsResponse);
+      setTeachers(teachersResponse);
+    } catch (error) {
+      Alert.alert('Erro ao carregar dados', error instanceof Error ? error.message : 'Erro desconhecido.');
+    }
+  }
 
   useEffect(() => {
-    setTeacherSuggestions(mockTeachers.map((teacher) => teacher.name));
-    setCourseSuggestions(mockCourses);
-    setSemesterSuggestions(mockSemesters);
-  }, []);
+    loadDependencies();
+  }, [token]);
 
   function updateField(field: keyof Subject, value: string) {
-    let sanitizedValue = value;
+    const nextValue = field === 'workload' ? onlyNumbers(value) : value;
+    setForm((prev) => ({ ...prev, [field]: nextValue }));
 
-    if (field === 'workload') {
-      sanitizedValue = onlyNumbers(value);
+    if (field === 'teacher') {
+      const foundTeacher = teachers.find((item) => item.id === Number(value));
+      setForm((prev) => ({
+        ...prev,
+        teacherId: foundTeacher?.id,
+        teacher: foundTeacher?.nome || '',
+      }));
+
+      if (errors.teacherId) {
+        setErrors((prev) => ({ ...prev, teacherId: '' }));
+      }
+      return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      [field]: sanitizedValue,
-    }));
-
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: '',
-      }));
+    if (errors[field as keyof SubjectErrors]) {
+      setErrors((prev) => ({ ...prev, [field]: '' } as SubjectErrors));
     }
   }
 
   function validateForm() {
-    const newErrors = { ...initialErrors };
+    const nextErrors = { ...initialErrors };
     let valid = true;
 
     if (!isTextFieldValid(form.name)) {
-      newErrors.name = 'Informe um nome de disciplina válido.';
+      nextErrors.name = 'Informe um nome de disciplina válido.';
       valid = false;
     }
 
-    if (!/^\d+$/.test(form.workload.trim()) || Number(form.workload) <= 0) {
-      newErrors.workload = 'A carga horária deve ser um número inteiro positivo.';
+    if (!/^\d+$/.test(form.workload) || Number(form.workload) <= 0) {
+      nextErrors.workload = 'Carga horária deve ser um inteiro positivo.';
       valid = false;
     }
 
-    if (!isTextFieldValid(form.teacher)) {
-      newErrors.teacher = 'Informe um professor responsável válido.';
+    if (!form.teacherId) {
+      nextErrors.teacherId = 'Selecione um professor responsável.';
       valid = false;
     }
 
     if (!isTextFieldValid(form.course)) {
-      newErrors.course = 'Informe um curso válido.';
+      nextErrors.course = 'Informe um curso válido.';
       valid = false;
     }
 
-    if (!isValidSemester(form.semester)) {
-      newErrors.semester = 'Informe um semestre válido, como 1º Semestre.';
+    if (!/^\d{1,2}\s*º?\s*semestre$/i.test(form.semester.trim())) {
+      nextErrors.semester = 'Use um formato como 1º Semestre.';
       valid = false;
     }
 
-    setErrors(newErrors);
+    setErrors(nextErrors);
     return valid;
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (!token) return;
     if (!validateForm()) {
-      Alert.alert(
-        'Cadastro inválido',
-        'Revise os campos e corrija os dados antes de continuar.'
-      );
+      Alert.alert('Cadastro inválido', 'Revise os campos destacados.');
       return;
     }
 
-    const subjectToSave = {
-      name: form.name.trim(),
-      workload: Number(form.workload),
-      teacher: form.teacher.trim(),
-      course: form.course.trim(),
-      semester: form.semester.trim(),
-    };
-
-    console.log('Disciplina cadastrada:', subjectToSave);
-
-    Alert.alert(
-      'Sucesso',
-      'Disciplina cadastrada com validação segura. Nesta etapa, os dados continuam simulados.'
-    );
-
-    setForm(initialForm);
-    setErrors(initialErrors);
+    try {
+      setSubmitting(true);
+      await createSubject(form, token);
+      Alert.alert('Disciplina cadastrada', 'Registro salvo com sucesso.');
+      setForm(initialForm);
+      setErrors(initialErrors);
+      await loadDependencies();
+    } catch (error) {
+      Alert.alert('Erro ao cadastrar', error instanceof Error ? error.message : 'Erro desconhecido.');
+    } finally {
+      setSubmitting(false);
+    }
   }
+
+  const teacherOptions = useMemo(
+    () => teachers.map((item) => ({ label: item.nome, value: String(item.id) })),
+    [teachers]
+  );
 
   return (
     <ScreenContainer>
       <SectionTitle
         title="Cadastro de Disciplinas"
-        subtitle="Preencha dados válidos. A carga horária aceita apenas número inteiro."
+        subtitle="Cada disciplina é vinculada a um professor e depois pode receber notas e faltas."
       />
 
       <View style={styles.card}>
-        <AppInput
-          label="Nome da disciplina"
-          placeholder="Digite o nome da disciplina"
-          value={form.name}
-          onChangeText={(text) => updateField('name', text)}
-          error={errors.name}
-        />
+        <AppInput label="Nome da disciplina" placeholder="Ex.: Programação Mobile" value={form.name} onChangeText={(text) => updateField('name', text)} error={errors.name} />
+        <AppInput label="Carga horária" placeholder="Ex.: 80" value={form.workload} onChangeText={(text) => updateField('workload', text)} error={errors.workload} keyboardType="number-pad" autoCapitalize="none" />
 
-        <AppInput
-          label="Carga horária"
-          placeholder="Ex.: 80"
-          value={form.workload}
-          onChangeText={(text) => updateField('workload', text)}
-          error={errors.workload}
-          keyboardType="number-pad"
-          autoCapitalize="none"
-        />
-
-        <AppInput
+        <SelectField
           label="Professor responsável"
-          placeholder="Digite o nome do professor"
+          placeholder="Selecione o professor"
           value={form.teacher}
-          onChangeText={(text) => updateField('teacher', text)}
-          error={errors.teacher}
+          options={teacherOptions}
+          onSelect={(value) => updateField('teacher', value)}
+          error={errors.teacherId}
         />
 
-        <Text style={styles.chipTitle}>Sugestões de professores:</Text>
-        <View style={styles.chipContainer}>
-          {teacherSuggestions.map((teacher) => (
-            <Pressable
-              key={teacher}
-              style={styles.chip}
-              onPress={() => updateField('teacher', teacher)}
-            >
-              <Text style={styles.chipText}>{teacher}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <AppInput label="Curso" placeholder="Ex.: ADS" value={form.course} onChangeText={(text) => updateField('course', text)} error={errors.course} />
+        <AppInput label="Semestre" placeholder="Ex.: 2º Semestre" value={form.semester} onChangeText={(text) => updateField('semester', text)} error={errors.semester} />
+        <AppButton title="Salvar disciplina" onPress={handleSubmit} loading={submitting} />
+      </View>
 
-        <AppInput
-          label="Curso"
-          placeholder="Digite o curso"
-          value={form.course}
-          onChangeText={(text) => updateField('course', text)}
-          error={errors.course}
+      <View style={styles.listCard}>
+        <Text style={styles.listTitle}>Disciplinas cadastradas</Text>
+        <FlatList
+          data={subjects}
+          keyExtractor={(item) => String(item.id)}
+          scrollEnabled={false}
+          renderItem={({ item }) => (
+            <View style={styles.rowCard}>
+              <Text style={styles.rowTitle}>{item.nome}</Text>
+              <Text style={styles.rowText}>Professor: {item.professor_nome}</Text>
+              <Text style={styles.rowText}>Curso: {item.curso}</Text>
+              <Text style={styles.rowText}>Semestre: {item.semestre} • {item.carga_horaria}h</Text>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma disciplina cadastrada ainda.</Text>}
         />
-
-        <Text style={styles.chipTitle}>Sugestões de cursos:</Text>
-        <View style={styles.chipContainer}>
-          {courseSuggestions.map((course) => (
-            <Pressable
-              key={course}
-              style={styles.chip}
-              onPress={() => updateField('course', course)}
-            >
-              <Text style={styles.chipText}>{course}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <AppInput
-          label="Semestre"
-          placeholder="Ex.: 1º Semestre"
-          value={form.semester}
-          onChangeText={(text) => updateField('semester', text)}
-          error={errors.semester}
-        />
-
-        <Text style={styles.chipTitle}>Sugestões de semestre:</Text>
-        <View style={styles.chipContainer}>
-          {semesterSuggestions.map((semester) => (
-            <Pressable
-              key={semester}
-              style={styles.chip}
-              onPress={() => updateField('semester', semester)}
-            >
-              <Text style={styles.chipText}>{semester}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <AppButton title="Cadastrar Disciplina" onPress={handleSubmit} />
       </View>
     </ScreenContainer>
   );
@@ -251,35 +202,44 @@ export default function SubjectRegistrationScreen() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 18,
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 18,
+  },
+  listCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 22,
     padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chipTitle: {
-    marginTop: -4,
-    marginBottom: 10,
-    fontSize: 14,
-    fontWeight: '700',
+  listTitle: {
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.primaryDark,
+    marginBottom: 12,
   },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    backgroundColor: '#FDEEEE',
+  rowCard: {
     borderWidth: 1,
-    borderColor: '#F3C1C1',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    backgroundColor: colors.surfaceMuted,
   },
-  chipText: {
-    color: colors.primaryDark,
-    fontSize: 13,
-    fontWeight: '600',
+  rowTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  rowText: {
+    color: colors.textLight,
+    marginBottom: 2,
+  },
+  emptyText: {
+    color: colors.textMuted,
   },
 });

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import ScreenContainer from '../components/ScreenContainer';
 import SectionTitle from '../components/SectionTitle';
-import { Teacher } from '../types';
+import { useAuth } from '../hooks/useAuth';
+import { createTeacher, listTeachers } from '../services/academicService';
 import { colors } from '../styles/colors';
+import { Teacher } from '../types';
 
 interface TeacherErrors {
   name: string;
@@ -41,152 +43,126 @@ function isValidEmail(email: string) {
 
 function isTextFieldValid(value: string) {
   const trimmed = value.trim();
-
-  if (trimmed.length < 2) return false;
-  if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(trimmed)) return false;
-  if (/^[\d\s\W_]+$/u.test(trimmed)) return false;
-
-  return true;
+  return trimmed.length >= 2 && /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(trimmed) && !/^[\d\s\W_]+$/u.test(trimmed);
 }
 
 export default function TeacherRegistrationScreen() {
+  const { token } = useAuth();
   const [form, setForm] = useState<Teacher>(initialForm);
   const [errors, setErrors] = useState<TeacherErrors>(initialErrors);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function loadTeachers() {
+    if (!token) return;
+    try {
+      const response = await listTeachers(token);
+      setTeachers(response);
+    } catch (error) {
+      Alert.alert('Falha ao carregar professores', error instanceof Error ? error.message : 'Erro desconhecido.');
+    }
+  }
+
+  useEffect(() => {
+    loadTeachers();
+  }, [token]);
 
   function updateField(field: keyof Teacher, value: string) {
-    let sanitizedValue = value;
+    const nextValue = field === 'teachingTime' ? onlyNumbers(value) : value;
 
-    if (field === 'teachingTime') {
-      sanitizedValue = onlyNumbers(value);
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      [field]: sanitizedValue,
-    }));
+    setForm((prev) => ({ ...prev, [field]: nextValue }));
 
     if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   }
 
   function validateForm() {
-    const newErrors = { ...initialErrors };
+    const nextErrors = { ...initialErrors };
     let valid = true;
 
     if (!isTextFieldValid(form.name)) {
-      newErrors.name = 'Informe um nome válido.';
+      nextErrors.name = 'Informe um nome válido.';
       valid = false;
     }
 
     if (!isTextFieldValid(form.title)) {
-      newErrors.title = 'Informe uma titulação válida.';
+      nextErrors.title = 'Informe uma titulação válida.';
       valid = false;
     }
 
     if (!isTextFieldValid(form.area)) {
-      newErrors.area = 'Informe uma área de atuação válida.';
+      nextErrors.area = 'Informe uma área de atuação válida.';
       valid = false;
     }
 
-    if (!/^\d+$/.test(form.teachingTime.trim()) || Number(form.teachingTime) <= 0) {
-      newErrors.teachingTime = 'Informe um tempo de docência em anos, usando número inteiro.';
+    if (!/^\d+$/.test(form.teachingTime) || Number(form.teachingTime) <= 0) {
+      nextErrors.teachingTime = 'Tempo de docência deve ser inteiro positivo.';
       valid = false;
     }
 
     if (!isValidEmail(form.email)) {
-      newErrors.email = 'Informe um email válido.';
+      nextErrors.email = 'Informe um e-mail válido.';
       valid = false;
     }
 
-    setErrors(newErrors);
+    setErrors(nextErrors);
     return valid;
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (!token) return;
     if (!validateForm()) {
-      Alert.alert(
-        'Cadastro inválido',
-        'Revise os campos e corrija os dados antes de continuar.'
-      );
+      Alert.alert('Cadastro inválido', 'Revise os campos destacados.');
       return;
     }
 
-    const teacherToSave = {
-      name: form.name.trim(),
-      title: form.title.trim(),
-      area: form.area.trim(),
-      teachingTime: Number(form.teachingTime),
-      email: form.email.trim().toLowerCase(),
-    };
-
-    console.log('Professor cadastrado:', teacherToSave);
-
-    Alert.alert(
-      'Sucesso',
-      'Professor cadastrado com validação segura. Nesta etapa, os dados continuam simulados.'
-    );
-
-    setForm(initialForm);
-    setErrors(initialErrors);
+    try {
+      setSubmitting(true);
+      await createTeacher(form, token);
+      Alert.alert('Professor cadastrado', 'Registro salvo no PostgreSQL.');
+      setForm(initialForm);
+      setErrors(initialErrors);
+      await loadTeachers();
+    } catch (error) {
+      Alert.alert('Erro ao cadastrar', error instanceof Error ? error.message : 'Erro desconhecido.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <ScreenContainer>
       <SectionTitle
         title="Cadastro de Professores"
-        subtitle="Preencha os dados do professor. O tempo de docência aceita apenas número inteiro."
+        subtitle="Acesso restrito ao administrador. Os dados alimentam as disciplinas e o login docente."
       />
 
       <View style={styles.card}>
-        <AppInput
-          label="Nome"
-          placeholder="Digite o nome do professor"
-          value={form.name}
-          onChangeText={(text) => updateField('name', text)}
-          error={errors.name}
-        />
+        <AppInput label="Nome" placeholder="Nome completo" value={form.name} onChangeText={(text) => updateField('name', text)} error={errors.name} />
+        <AppInput label="Titulação" placeholder="Ex.: Mestre" value={form.title} onChangeText={(text) => updateField('title', text)} error={errors.title} />
+        <AppInput label="Área de atuação" placeholder="Ex.: Programação Mobile" value={form.area} onChangeText={(text) => updateField('area', text)} error={errors.area} />
+        <AppInput label="Tempo de docência (anos)" placeholder="Ex.: 8" value={form.teachingTime} onChangeText={(text) => updateField('teachingTime', text)} error={errors.teachingTime} keyboardType="number-pad" autoCapitalize="none" />
+        <AppInput label="Email" placeholder="Digite o email" value={form.email} onChangeText={(text) => updateField('email', text)} error={errors.email} keyboardType="email-address" autoCapitalize="none" />
+        <AppButton title="Salvar professor" onPress={handleSubmit} loading={submitting} />
+      </View>
 
-        <AppInput
-          label="Titulação"
-          placeholder="Ex.: Mestre, Doutor, Especialista"
-          value={form.title}
-          onChangeText={(text) => updateField('title', text)}
-          error={errors.title}
+      <View style={styles.listCard}>
+        <Text style={styles.listTitle}>Corpo docente</Text>
+        <FlatList
+          data={teachers}
+          keyExtractor={(item) => String(item.id)}
+          scrollEnabled={false}
+          renderItem={({ item }) => (
+            <View style={styles.rowCard}>
+              <Text style={styles.rowTitle}>{item.nome}</Text>
+              <Text style={styles.rowText}>{item.titulacao} • {item.area}</Text>
+              <Text style={styles.rowText}>Docência: {item.tempo_docencia} anos</Text>
+              <Text style={styles.rowText}>{item.email}</Text>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={styles.emptyText}>Nenhum professor cadastrado ainda.</Text>}
         />
-
-        <AppInput
-          label="Área de atuação"
-          placeholder="Digite a área de atuação"
-          value={form.area}
-          onChangeText={(text) => updateField('area', text)}
-          error={errors.area}
-        />
-
-        <AppInput
-          label="Tempo de docência (anos)"
-          placeholder="Ex.: 5"
-          value={form.teachingTime}
-          onChangeText={(text) => updateField('teachingTime', text)}
-          error={errors.teachingTime}
-          keyboardType="number-pad"
-          autoCapitalize="none"
-        />
-
-        <AppInput
-          label="Email"
-          placeholder="Digite o email"
-          value={form.email}
-          onChangeText={(text) => updateField('email', text)}
-          error={errors.email}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-
-        <AppButton title="Cadastrar Professor" onPress={handleSubmit} />
       </View>
     </ScreenContainer>
   );
@@ -195,9 +171,44 @@ export default function TeacherRegistrationScreen() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 18,
+    borderRadius: 22,
     padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: 18,
+  },
+  listCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginBottom: 12,
+  },
+  rowCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    backgroundColor: colors.surfaceMuted,
+  },
+  rowTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  rowText: {
+    color: colors.textLight,
+    marginBottom: 2,
+  },
+  emptyText: {
+    color: colors.textMuted,
   },
 });

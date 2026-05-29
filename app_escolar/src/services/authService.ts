@@ -1,58 +1,37 @@
+import { loginRequest } from './api';
 import { User } from '../types';
 
 interface SignInResponse {
   success: boolean;
   message?: string;
   user?: User;
+  token?: string;
 }
 
-/**
- * Serviço simulado de autenticação.
- * Aqui não existe API real ainda.
- * Estamos apenas fingindo um login válido.
- */
-export async function fakeSignIn(
+export async function signInRequest(
   login: string,
   password: string
 ): Promise<SignInResponse> {
-  // Simula um pequeno delay, como se fosse uma chamada real de rede
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  try {
+    const response = await loginRequest(login, password);
 
-  const validUsers = [
-    {
-      id: 1,
-      name: 'Administrador Scholar',
-      email: 'admin@appscholar.com',
-      password: '123456',
-    },
-    {
-      id: 2,
-      name: 'Aluno Teste',
-      email: 'aluno@appscholar.com',
-      password: '123456',
-    },
-  ];
-
-  const foundUser = validUsers.find(
-    (user) =>
-      (user.email.toLowerCase() === login.toLowerCase() ||
-        user.name.toLowerCase() === login.toLowerCase()) &&
-      user.password === password
-  );
-
-  if (!foundUser) {
+    return {
+      success: true,
+      token: response.token,
+      user: {
+        id: response.usuario.id,
+        name: response.usuario.nome,
+        email: response.usuario.email,
+        profile: response.usuario.perfil,
+      },
+    };
+  } catch (error) {
     return {
       success: false,
-      message: 'Login ou senha inválidos.',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível autenticar no backend.',
     };
   }
-
-  return {
-    success: true,
-    user: {
-      id: foundUser.id,
-      name: foundUser.name,
-      email: foundUser.email,
-    },
-  };
 }

@@ -20,19 +20,28 @@ export default function BoletimCard({ item }: BoletimCardProps) {
       <Text style={styles.discipline}>{item.discipline}</Text>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Nota 1:</Text>
+        <Text style={styles.label}>Nota 1</Text>
         <Text style={styles.value}>{item.grade1.toFixed(1)}</Text>
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Nota 2:</Text>
+        <Text style={styles.label}>Nota 2</Text>
         <Text style={styles.value}>{item.grade2.toFixed(1)}</Text>
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Média:</Text>
+        <Text style={styles.label}>Média</Text>
         <Text style={styles.value}>{item.average.toFixed(1)}</Text>
       </View>
+
+      {typeof item.absences === 'number' && typeof item.totalClasses === 'number' ? (
+        <View style={styles.row}>
+          <Text style={styles.label}>Faltas</Text>
+          <Text style={styles.value}>
+            {item.absences} de {item.totalClasses}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.statusContainer}>
         <Text style={[styles.status, { color: statusColor }]}>{item.status}</Text>
@@ -44,7 +53,7 @@ export default function BoletimCard({ item }: BoletimCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
@@ -52,7 +61,7 @@ const styles = StyleSheet.create({
   },
   discipline: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     marginBottom: 12,
   },
@@ -68,14 +77,14 @@ const styles = StyleSheet.create({
   value: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   statusContainer: {
     marginTop: 8,
     alignItems: 'flex-end',
   },
   status: {
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 14,
   },
 });

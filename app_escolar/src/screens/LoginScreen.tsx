@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import ScreenContainer from '../components/ScreenContainer';
 import SectionTitle from '../components/SectionTitle';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../styles/colors';
+import { getApiBaseUrl } from '../services/api';
 
 export default function LoginScreen() {
   const { signIn, isLoading } = useAuth();
@@ -19,11 +20,7 @@ export default function LoginScreen() {
   });
 
   async function handleLogin() {
-    const errors = {
-      login: '',
-      password: '',
-    };
-
+    const errors = { login: '', password: '' };
     let hasError = false;
 
     if (!login.trim()) {
@@ -44,34 +41,38 @@ export default function LoginScreen() {
       return;
     }
 
-    const response = await signIn(login.trim(), password);
+    const response = await signIn(login.trim(), password.trim());
 
     if (!response.success) {
-      setGeneralError(response.message || 'Falha no login.');
+      setGeneralError(
+        `${response.message || 'Falha no login.'} Verifique também a URL da API.`
+      );
     }
   }
 
   return (
     <ScreenContainer>
-      <View style={styles.topSpace} />
-
-      <SectionTitle
-        title="App Scholar"
-        subtitle="Gerenciamento acadêmico mobile com login, cadastros e consulta de boletim."
-      />
+      <View style={styles.hero}>
+        <Text style={styles.badge}>FATEC • App Scholar</Text>
+        <Text style={styles.heroTitle}>Gestão acadêmica completa no celular</Text>
+        <Text style={styles.heroSubtitle}>
+          Login com backend em Node.js, dados persistidos em PostgreSQL e integrações externas.
+        </Text>
+      </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Entrar</Text>
+        <SectionTitle
+          title="Entrar"
+          subtitle="Use o usuário administrador ou professor criado no seed do backend."
+        />
 
         <AppInput
           label="Login ou Email"
-          placeholder="Digite seu login ou email"
+          placeholder="Ex.: admin@appscholar.com"
           value={login}
           onChangeText={(text) => {
             setLogin(text);
-            if (fieldErrors.login) {
-              setFieldErrors((prev) => ({ ...prev, login: '' }));
-            }
+            if (fieldErrors.login) setFieldErrors((prev) => ({ ...prev, login: '' }));
           }}
           error={fieldErrors.login}
           autoCapitalize="none"
@@ -83,9 +84,7 @@ export default function LoginScreen() {
           value={password}
           onChangeText={(text) => {
             setPassword(text);
-            if (fieldErrors.password) {
-              setFieldErrors((prev) => ({ ...prev, password: '' }));
-            }
+            if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }));
           }}
           error={fieldErrors.password}
           secureTextEntry
@@ -94,17 +93,23 @@ export default function LoginScreen() {
 
         {generalError ? <Text style={styles.error}>{generalError}</Text> : null}
 
-        <AppButton
-          title="Entrar"
-          onPress={handleLogin}
-          loading={isLoading}
-          style={styles.button}
-        />
+        <AppButton title="Entrar no sistema" onPress={handleLogin} loading={isLoading} />
 
-        <View style={styles.demoBox}>
-          <Text style={styles.demoTitle}>Credenciais simuladas</Text>
-          <Text style={styles.demoText}>Email: admin@appscholar.com</Text>
-          <Text style={styles.demoText}>Senha: 123456</Text>
+        <View style={styles.infoBox}>
+          <Text style={styles.infoTitle}>Usuários padrão do seed</Text>
+          <Text style={styles.infoText}>Admin: admin@appscholar.com / 123456</Text>
+          <Text style={styles.infoText}>Professor: prof.mobile@appscholar.com / 123456</Text>
+        </View>
+
+        <View style={styles.apiBox}>
+          <Text style={styles.apiTitle}>URL atual da API</Text>
+          <Text style={styles.apiText}>{getApiBaseUrl()}</Text>
+          <Text
+            style={styles.apiHint}
+            onPress={() => Linking.openURL('https://docs.expo.dev/guides/environment-variables/')}
+          >
+            Se estiver no celular, configure EXPO_PUBLIC_API_URL com o IP do seu computador.
+          </Text>
         </View>
       </View>
     </ScreenContainer>
@@ -112,45 +117,83 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  topSpace: {
-    height: 40,
+  hero: {
+    backgroundColor: colors.primary,
+    borderRadius: 26,
+    padding: 24,
+    marginBottom: 18,
+  },
+  badge: {
+    color: '#FFEAEA',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+  heroSubtitle: {
+    color: '#FFEAEA',
+    fontSize: 15,
+    lineHeight: 22,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: 22,
+    padding: 20,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 18,
-  },
-  button: {
-    marginTop: 8,
   },
   error: {
     color: colors.danger,
     marginBottom: 12,
     fontSize: 14,
-    fontWeight: '600',
-  },
-  demoBox: {
-    marginTop: 18,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  demoTitle: {
     fontWeight: '700',
+  },
+  infoBox: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#F3C1C1',
+  },
+  infoTitle: {
     color: colors.primaryDark,
+    fontWeight: '800',
     marginBottom: 6,
   },
-  demoText: {
+  infoText: {
     color: colors.textLight,
+    marginBottom: 2,
+  },
+  apiBox: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  apiTitle: {
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 6,
+  },
+  apiText: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  apiHint: {
+    color: colors.textLight,
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

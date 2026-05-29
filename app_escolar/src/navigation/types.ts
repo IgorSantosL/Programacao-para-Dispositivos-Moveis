@@ -4,5 +4,6 @@ export type RootStackParamList = {
   StudentRegistration: undefined;
   TeacherRegistration: undefined;
   SubjectRegistration: undefined;
+  AcademicRecords: undefined;
   ReportCard: undefined;
 };

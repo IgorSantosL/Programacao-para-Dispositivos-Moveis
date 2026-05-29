@@ -1,32 +1,47 @@
 # App Scholar
 
-Aplicativo mobile multiplataforma desenvolvido em **React Native com Expo** para gerenciamento acadêmico, com foco na **Parte 1** da atividade: interface, navegação, formulários e dados simulados.
+Projeto completo de gerenciamento acadêmico para faculdade, composto por:
 
-## Objetivo do projeto
+- **Frontend mobile** em **React Native + Expo + TypeScript**
+- **Backend** em **Node.js + Express**
+- **Banco de dados** em **PostgreSQL**
+- Integrações externas com **ViaCEP** e **IBGE Localidades**
 
-O app foi criado para demonstrar:
-
-- autenticação simulada
-- navegação entre telas
-- cadastro de alunos
-- cadastro de professores
-- cadastro de disciplinas
-- consulta de boletim
-- validação de formulários
-- uso de componentes reutilizáveis
-- organização em pastas conforme a estrutura pedida no enunciado
-
-Nesta versão, os dados são **mockados/simulados**, sem banco de dados.
+O sistema cobre os requisitos da Parte 1 e da Parte 2 do enunciado, incluindo interface mobile, autenticação, cadastros acadêmicos, boletim, integração com banco relacional e consumo de APIs externas.
 
 ---
 
-## Tecnologias utilizadas
+## Funcionalidades implementadas
 
-- React Native
-- Expo
-- TypeScript
-- React Navigation
-- Hooks do React (`useState`, `useEffect`, `useContext`)
+### Perfis e permissões
+- **Administrador**
+  - cadastrar alunos
+  - cadastrar professores
+  - cadastrar disciplinas
+  - lançar e editar notas
+  - lançar e editar faltas
+  - consultar boletins
+  - visualizar indicadores do dashboard
+
+- **Professor**
+  - lançar e editar notas
+  - lançar e editar faltas
+  - consultar boletins
+  - visualizar dashboard acadêmico
+
+### Módulos principais
+- Login com autenticação via **JWT**
+- Dashboard com indicadores salvos no banco
+- Cadastro de alunos com:
+  - validação de formulário
+  - preenchimento automático de endereço via **ViaCEP**
+  - estados e cidades via **IBGE**
+- Cadastro de professores
+- Cadastro de disciplinas
+- Lançamento de **notas e faltas**
+- Consulta de boletim por matrícula
+- Menu lateral expandível na tela inicial
+- Seed inicial com usuários e dados de exemplo
 
 ---
 
@@ -35,6 +50,14 @@ Nesta versão, os dados são **mockados/simulados**, sem banco de dados.
 ```text
 app_escolar/
 ├── assets/
+├── backend/
+│   ├── controllers/
+│   ├── database/
+│   ├── middleware/
+│   ├── routes/
+│   ├── .env.example
+│   ├── package.json
+│   └── server.js
 ├── src/
 │   ├── components/
 │   ├── hooks/
@@ -43,216 +66,433 @@ app_escolar/
 │   ├── services/
 │   ├── styles/
 │   └── types/
-├── .gitignore
+├── .env.example
 ├── App.tsx
 ├── app.json
 ├── babel.config.js
 ├── index.ts
 ├── package.json
-├── package-lock.json
-└── tsconfig.json
+└── README.md
 ```
 
-### Pastas principais
+---
 
-- `components`: componentes reutilizáveis como botão, input e cards
-- `hooks`: autenticação simulada com contexto
-- `navigation`: pilha de navegação do app
-- `screens`: telas principais do sistema
-- `services`: dados simulados e serviços fake
-- `styles`: paleta de cores e estilos globais
-- `types`: interfaces TypeScript
+## Tecnologias
+
+### Frontend
+- React Native
+- Expo
+- TypeScript
+- React Navigation
+- Hooks (`useState`, `useEffect`, `useContext`)
+- Fetch API
+
+### Backend
+- Node.js
+- Express.js
+- PostgreSQL
+- JWT
+- bcryptjs
+- axios
+
+### APIs externas
+- ViaCEP
+- IBGE Localidades
 
 ---
 
-## Funcionalidades atuais
+## Pré-requisitos
 
-### 1. Login
-- login simulado
-- validação de campos obrigatórios
-- redirecionamento para o dashboard após autenticação
+No Windows, instale:
 
-### 2. Dashboard
-- acesso rápido às funcionalidades principais
-- interface visual com cards clicáveis
-- botão de saída
+- **Node.js LTS**
+- **PostgreSQL**
+- **VS Code**
+- **Expo Go** no celular, se quiser testar em aparelho físico
 
-### 3. Cadastro de alunos
-Validações implementadas:
-- nome válido
-- matrícula numérica inteira
-- curso válido
-- email válido
-- telefone com 10 ou 11 dígitos
-- CEP com 8 dígitos
-- endereço, cidade e estado válidos
-
-### 4. Cadastro de professores
-Validações implementadas:
-- nome válido
-- titulação válida
-- área de atuação válida
-- tempo de docência em número inteiro
-- email válido
-
-### 5. Cadastro de disciplinas
-Validações implementadas:
-- nome da disciplina válido
-- carga horária em número inteiro positivo
-- professor responsável válido
-- curso válido
-- semestre válido
-
-### 6. Consulta de boletim
-- exibição de disciplinas
-- nota 1
-- nota 2
-- média
-- situação
-- resumo com média geral e status
-
----
-
-## Requisitos para executar
-
-Antes de rodar o projeto, você precisa ter instalado:
-
-- **Node.js** (recomendado: versão LTS)
-- **npm**
-- **Expo Go** no celular, ou emulador Android/iOS
-- **VS Code** ou outro editor
-
-Para conferir se Node e npm estão instalados:
+Confirme no terminal:
 
 ```bash
 node -v
 npm -v
+psql --version
 ```
 
 ---
 
-## Como executar o projeto
+# PASSO A PASSO COMPLETO NO WINDOWS
 
-### 1. Entrar na pasta do projeto
+## 1. Abrir a pasta no VS Code
+
+Abra a pasta raiz `app_escolar` no VS Code.
+
+Ela precisa conter:
+- `package.json`
+- `App.tsx`
+- `backend/`
+- `src/`
+
+---
+
+## 2. Criar o banco PostgreSQL
+
+Como o sistema cria tabelas automaticamente, você só precisa criar o banco uma vez.
+
+### Opção A — pelo terminal com psql
 
 ```bash
-cd app_escolar
+psql -U postgres -h localhost -c "CREATE DATABASE app_scholar;"
 ```
 
-### 2. Instalar as dependências
+Senha:
+```text
+123
+```
 
-Se o projeto acabou de ser clonado ou baixado, rode:
+Se o banco já existir, ignore o erro.
+
+### Opção B — pelo pgAdmin
+Crie um banco chamado:
+
+```text
+app_scholar
+```
+
+---
+
+## 3. Configurar o backend
+
+Entre na pasta do backend:
+
+```bash
+cd backend
+```
+
+Instale as dependências:
 
 ```bash
 npm install
 ```
 
-### 3. Caso necessário, instalar o preset do Babel
+Copie o arquivo de exemplo de ambiente para `.env`.
 
-Se aparecer erro relacionado a `babel-preset-expo`, rode:
-
-```bash
-npm install --save-dev babel-preset-expo
+### No PowerShell:
+```powershell
+Copy-Item .env.example .env
 ```
 
-### 4. Iniciar o projeto
-
-```bash
-npx expo start
+### No CMD:
+```cmd
+copy .env.example .env
 ```
 
-### 5. Se quiser limpar o cache do Expo
+### No Git Bash:
+```bash
+cp .env.example .env
+```
 
-Use este comando quando o app parecer estar com cache antigo ou comportamento estranho:
+O `.env` deve ficar assim:
+
+```env
+PORT=3001
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=123
+DB_NAME=app_scholar
+JWT_SECRET=app_scholar_super_secret_key
+```
+
+Agora rode o backend:
+
+```bash
+npm start
+```
+
+Se estiver tudo certo, você verá algo como:
+
+```text
+Backend App Scholar rodando em http://localhost:3001
+```
+
+### O backend faz automaticamente ao iniciar
+- cria tabelas
+- cria usuário admin
+- cria usuário professor
+- cria aluno exemplo
+- cria disciplina exemplo
+- cria notas e faltas exemplo
+
+---
+
+## 4. Configurar o frontend mobile
+
+Abra um novo terminal no VS Code e volte para a raiz do projeto:
+
+```bash
+cd ..
+```
+
+Instale as dependências do app:
+
+```bash
+npm install
+```
+
+Copie o `.env.example` da raiz para `.env`.
+
+### No PowerShell:
+```powershell
+Copy-Item .env.example .env
+```
+
+### No CMD:
+```cmd
+copy .env.example .env
+```
+
+### No Git Bash:
+```bash
+cp .env.example .env
+```
+
+---
+
+## 5. Definir a URL da API
+
+### Se for rodar no navegador web
+Use:
+
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3001/api
+```
+
+### Se for rodar no celular físico
+Você **não pode usar localhost**.
+
+Use o IP do seu computador na rede local. Exemplo:
+
+```env
+EXPO_PUBLIC_API_URL=http://192.168.0.15:3001/api
+```
+
+Para descobrir o IP do seu computador no Windows:
+
+```bash
+ipconfig
+```
+
+Procure por algo como:
+- IPv4 Address
+- Endereço IPv4
+
+Exemplo:
+```text
+192.168.0.15
+```
+
+---
+
+## 6. Rodar o app Expo
+
+Na raiz do projeto:
 
 ```bash
 npx expo start -c
 ```
 
----
+### Se estiver no celular e der problema de rede
+Use:
 
-## Como abrir no celular
-
-Depois de rodar `npx expo start`:
-
-- abra o aplicativo **Expo Go** no celular
-- escaneie o QR Code exibido no terminal/navegador
+```bash
+npx expo start --tunnel -c
+```
 
 ---
 
-## Credenciais de teste
+## 7. Usuários padrão do sistema
 
-Use as credenciais simuladas abaixo para login:
-
+### Administrador
 ```text
-Email: admin@appscholar.com
+Login: admin@appscholar.com
+Senha: 123456
+```
+
+### Professor
+```text
+Login: prof.mobile@appscholar.com
 Senha: 123456
 ```
 
 ---
 
-## Dados simulados para teste
+## 8. Fluxo recomendado de teste
 
-### CEPs mockados
-Você pode testar estes CEPs no cadastro de alunos:
+### Como admin
+1. entrar com `admin@appscholar.com`
+2. cadastrar aluno
+3. cadastrar professor
+4. cadastrar disciplina
+5. lançar notas e faltas
+6. consultar boletim pela matrícula
 
+### Como professor
+1. entrar com `prof.mobile@appscholar.com`
+2. acessar notas e faltas
+3. lançar/editar registros
+4. consultar boletim
+
+---
+
+## 9. Endpoints principais do backend
+
+### Autenticação
+```http
+POST /api/login
+```
+
+### Cadastros
+```http
+GET  /api/alunos
+POST /api/alunos
+
+GET  /api/professores
+POST /api/professores
+
+GET  /api/disciplinas
+POST /api/disciplinas
+```
+
+### Notas e faltas
+```http
+POST /api/notas
+POST /api/frequencias
+GET  /api/academic-records
+```
+
+### Boletim
+```http
+GET /api/boletim/:matricula
+```
+
+### Dashboard
+```http
+GET /api/dashboard/summary
+```
+
+### APIs externas
+```http
+GET /api/external/cep/:cep
+GET /api/external/estados
+GET /api/external/cidades/:uf
+```
+
+---
+
+## 10. Testes rápidos da API
+
+Com o backend rodando, teste no navegador ou no Postman:
+
+### Health check
 ```text
-12246000
-12300000
-01001000
+http://localhost:3001/api/health
 ```
-
-Eles preenchem endereço simulado automaticamente.
 
 ---
 
-## Comportamento dos dados nesta etapa
+## 11. Problemas comuns
 
-Nesta etapa do projeto:
+### Erro de conexão no celular
+- confira se `EXPO_PUBLIC_API_URL` está com o IP do computador
+- confira se celular e PC estão na mesma rede
+- teste `--tunnel`
+- verifique o firewall do Windows
 
-- os cadastros são simulados
-- os dados são exibidos no console
-- não há banco de dados real
-- não há API REST real ainda
+### Erro no PostgreSQL
+- confirme se o serviço do PostgreSQL está iniciado
+- confirme usuário `postgres`
+- confirme senha `123`
+- confirme se o banco `app_scholar` existe
 
-Ou seja: o foco está em **interface, navegação, validação e experiência do usuário**.
-
----
-
-## Comandos úteis
-
-### Instalar dependências
-
-```bash
-npm install
-```
-
-### Rodar o projeto
-
-```bash
-npx expo start
-```
-
-### Rodar limpando cache
-
+### Erro de cache no Expo
 ```bash
 npx expo start -c
 ```
 
-### Instalar navegação, caso precise novamente
-
+### Dependência faltando
 ```bash
-npx expo install @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context react-native-gesture-handler react-native-reanimated
-```
-
-### Instalar preset do Babel, caso falte
-
-```bash
-npm install --save-dev babel-preset-expo
+npm install
 ```
 
 ---
 
-## Autor
+## 12. Requisitos dos PDFs cobertos
 
-Igor Lima
+### Parte 1
+- telas mobile
+- navegação
+- componentes reutilizáveis
+- hooks
+- layout e validação
+- dashboard
+- formulários
+- boletim
+
+### Parte 2
+- backend Node.js
+- APIs REST
+- integração com PostgreSQL
+- autenticação
+- cadastro de dados acadêmicos
+- consulta de boletim
+- integração com ViaCEP
+- integração com IBGE
+
+---
+
+## 13. Melhorias além do enunciado
+- controle de perfis (admin e professor)
+- dashboard com indicadores
+- menu lateral expandível
+- lançamento de faltas
+- seed inicial automática
+- proxy backend para APIs externas
+- visual mobile mais robusto
+
+---
+
+## 14. Comandos principais resumidos
+
+### Backend
+```bash
+cd backend
+npm install
+npm start
+```
+
+### Frontend
+```bash
+cd ..
+npm install
+npx expo start -c
+```
+
+### Frontend com túnel
+```bash
+npx expo start --tunnel -c
+```
+
+---
+
+## 15. Observação final
+
+O projeto foi estruturado para funcionar localmente com:
+- PostgreSQL local
+- backend local na porta `3001`
+- app mobile consumindo a API local
+
+Para aparelho físico, o ponto mais importante é configurar corretamente:
+
+```env
+EXPO_PUBLIC_API_URL=http://SEU_IP_LOCAL:3001/api
+```

@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { fakeSignIn } from '../services/authService';
+import { signInRequest } from '../services/authService';
 import { User } from '../types';
 
 interface AuthContextData {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   signIn: (login: string, password: string) => Promise<{
     success: boolean;
@@ -20,16 +21,18 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function signIn(login: string, password: string) {
     setIsLoading(true);
 
     try {
-      const response = await fakeSignIn(login, password);
+      const response = await signInRequest(login, password);
 
-      if (response.success && response.user) {
+      if (response.success && response.user && response.token) {
         setUser(response.user);
+        setToken(response.token);
         return { success: true };
       }
 
@@ -44,16 +47,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   function signOut() {
     setUser(null);
+    setToken(null);
   }
 
   const value = useMemo(
     () => ({
       user,
+      token,
       isLoading,
       signIn,
       signOut,
     }),
-    [user, isLoading]
+    [user, token, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

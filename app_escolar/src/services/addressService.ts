@@ -1,8 +1,5 @@
-/**
- * Serviço mockado de CEP.
- * Como ainda não temos integração externa,
- * usamos um pequeno mapa local de CEPs simulados.
- */
+import { ExternalState } from '../types';
+import { apiRequest } from './api';
 
 interface AddressResponse {
   address: string;
@@ -10,28 +7,29 @@ interface AddressResponse {
   state: string;
 }
 
-const mockCepDatabase: Record<string, AddressResponse> = {
-  '12246000': {
-    address: 'Av. São João, 1000',
-    city: 'São José dos Campos',
-    state: 'SP',
-  },
-  '12300000': {
-    address: 'Rua das Palmeiras, 250',
-    city: 'Jacareí',
-    state: 'SP',
-  },
-  '01001000': {
-    address: 'Praça da Sé',
-    city: 'São Paulo',
-    state: 'SP',
-  },
-};
+export async function getAddressByCep(cep: string): Promise<AddressResponse | null> {
+  try {
+    const response = await apiRequest<{
+      cep: string;
+      endereco: string;
+      cidade: string;
+      estado: string;
+    }>(`/external/cep/${cep}`);
 
-export async function getAddressByCep(
-  cep: string
-): Promise<AddressResponse | null> {
-  await new Promise((resolve) => setTimeout(resolve, 500));
+    return {
+      address: response.endereco,
+      city: response.cidade,
+      state: response.estado,
+    };
+  } catch {
+    return null;
+  }
+}
 
-  return mockCepDatabase[cep] || null;
+export async function getStates() {
+  return apiRequest<ExternalState[]>('/external/estados');
+}
+
+export async function getCitiesByState(uf: string) {
+  return apiRequest<string[]>(`/external/cidades/${uf}`);
 }
