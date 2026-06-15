@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import AppButton from '../components/AppButton';
 import BoletimCard from '../components/BoletimCard';
@@ -14,21 +15,24 @@ export default function StudentPortalScreen() {
   const [report, setReport] = useState<ReportCardResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    async function loadReport() {
-      if (!token || !user?.registration) return;
-      try {
-        setLoading(true);
-        const response = await getReportCardByRegistration(user.registration, token);
-        setReport(response);
-      } catch (error) {
-        Alert.alert('Falha ao carregar portal do aluno', error instanceof Error ? error.message : 'Erro desconhecido.');
-      } finally {
-        setLoading(false);
-      }
+  const loadReport = useCallback(async () => {
+    if (!token || !user?.registration) return;
+    try {
+      setLoading(true);
+      const response = await getReportCardByRegistration(user.registration, token);
+      setReport(response);
+    } catch (error) {
+      Alert.alert('Falha ao carregar portal do aluno', error instanceof Error ? error.message : 'Erro desconhecido.');
+    } finally {
+      setLoading(false);
     }
-    loadReport();
   }, [token, user?.registration]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadReport();
+    }, [loadReport])
+  );
 
   const items = useMemo<ReportCardItem[]>(() => {
     if (!report) return [];

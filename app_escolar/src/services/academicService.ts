@@ -2,6 +2,10 @@ import {
   AcademicRecordRow,
   ApiMessageResponse,
   DashboardSummary,
+  GradeEntryDetail,
+  GradeEntrySaveResponse,
+  ProfessorDisciplineStudent,
+  ProfessorSubjectSummary,
   ReportCardResponse,
   Student,
   Subject,
@@ -111,4 +115,24 @@ export function getReportCardByRegistration(matricula: string, token: string) {
 
 export function getDashboardSummary(token: string) {
   return apiRequest<DashboardSummary>('/dashboard/summary', { token });
+}
+
+export function listTeacherSubjectsForGrades(token: string) {
+  return apiRequest<ProfessorSubjectSummary[]>('/professor/disciplinas', { token });
+}
+
+export function listStudentsByTeacherSubject(subjectId: number, token: string) {
+  return apiRequest<ProfessorDisciplineStudent[]>(`/professor/disciplinas/${subjectId}/alunos`, { token });
+}
+
+export function getGradeEntryDetail(subjectId: number, studentId: number, token: string) {
+  return apiRequest<GradeEntryDetail>(`/professor/disciplinas/${subjectId}/alunos/${studentId}/notas`, { token });
+}
+
+export function saveTeacherGrade(subjectId: number, studentId: number, payload: { nota1: number; nota2: number }, token: string) {
+  return apiRequest<GradeEntrySaveResponse>(`/professor/disciplinas/${subjectId}/alunos/${studentId}/notas`, {
+    method: 'PUT',
+    token,
+    body: payload,
+  });
 }

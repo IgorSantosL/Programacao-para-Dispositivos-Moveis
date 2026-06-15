@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AppButton from '../components/AppButton';
@@ -21,7 +21,6 @@ import { colors } from '../styles/colors';
 import { DashboardSummary } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
-
 type ListType = 'students' | 'teachers' | 'subjects' | 'records' | null;
 
 const emptySummary: DashboardSummary = {
@@ -64,6 +63,18 @@ export default function DashboardScreen({ navigation }: Props) {
   );
 
   function handleLogout() {
+    if (Platform.OS === 'web') {
+      const confirmed =
+        typeof window !== 'undefined'
+          ? window.confirm('Deseja encerrar a sessão?')
+          : true;
+
+      if (confirmed) {
+        signOut();
+      }
+      return;
+    }
+
     Alert.alert('Sair do App', 'Deseja encerrar a sessão?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Sair', style: 'destructive', onPress: signOut },
@@ -83,7 +94,7 @@ export default function DashboardScreen({ navigation }: Props) {
         ? [{ label: 'Cadastro de Disciplinas', onPress: () => navigation.navigate('SubjectRegistration') }]
         : []),
       ...(isAdmin || isProfessor
-        ? [{ label: 'Notas e Faltas', onPress: () => navigation.navigate('AcademicRecords') }]
+        ? [{ label: 'Módulo de Notas', onPress: () => navigation.navigate('TeacherSubjects') }]
         : []),
       { label: 'Consulta de Boletim', onPress: () => navigation.navigate('ReportCard') },
     ];
@@ -201,8 +212,8 @@ export default function DashboardScreen({ navigation }: Props) {
             <Text style={styles.heroTitle}>Olá, {user?.name}</Text>
             <Text style={styles.heroDescription}>
               {isAdmin
-                ? 'Você pode cadastrar alunos, professores, disciplinas e lançar notas e faltas.'
-                : 'Você pode lançar notas, faltas e consultar boletins dos alunos vinculados ao ambiente.'}
+                ? 'Você pode cadastrar alunos, professores, disciplinas e acessar o novo módulo de notas por disciplina.'
+                : 'Você pode abrir suas disciplinas, ver os alunos vinculados e lançar ou alterar notas com segurança.'}
             </Text>
           </View>
 
@@ -237,6 +248,19 @@ export default function DashboardScreen({ navigation }: Props) {
               onPress={() => openSummaryList('records')}
             />
           </View>
+
+          {(isAdmin || isProfessor) ? (
+            <View style={styles.moduleCard}>
+              <Text style={styles.moduleTitle}>Novo módulo de lançamento de notas</Text>
+              <Text style={styles.moduleText}>
+                Abra a lista de disciplinas, escolha os alunos matriculados e registre ou altere as notas com atualização automática do boletim.
+              </Text>
+              <AppButton
+                title="Abrir módulo de notas"
+                onPress={() => navigation.navigate('TeacherSubjects')}
+              />
+            </View>
+          ) : null}
 
           <View style={styles.logoutContainer}>
             <AppButton title="Sair do App" onPress={handleLogout} variant="danger" />
@@ -318,6 +342,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  moduleCard: {
+    marginTop: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 18,
+  },
+  moduleTitle: {
+    color: colors.primaryDark,
+    fontWeight: '900',
+    fontSize: 18,
+    marginBottom: 8,
+  },
+  moduleText: {
+    color: colors.textLight,
+    lineHeight: 21,
+    marginBottom: 14,
   },
   logoutContainer: {
     marginTop: 18,

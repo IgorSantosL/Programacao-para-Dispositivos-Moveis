@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
@@ -16,6 +17,26 @@ export default function ReportCardScreen() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<ReportCardResponse | null>(null);
   const [error, setError] = useState('');
+
+
+
+  const loadReport = useCallback(async () => {
+    if (!token || !registration.trim()) return;
+    try {
+      const response = await getReportCardByRegistration(registration.trim(), token);
+      setReport(response);
+    } catch {
+      // silencia erro de atualização automática quando não houver boletim disponível
+    }
+  }, [registration, token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (report) {
+        loadReport();
+      }
+    }, [loadReport, report])
+  );
 
   const items = useMemo<ReportCardItem[]>(() => {
     if (!report) return [];

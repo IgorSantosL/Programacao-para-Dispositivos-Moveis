@@ -12,6 +12,7 @@ interface AppButtonProps {
   title: string;
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'danger';
   style?: ViewStyle;
 }
@@ -20,19 +21,23 @@ export default function AppButton({
   title,
   onPress,
   loading = false,
+  disabled = false,
   variant = 'primary',
   style,
 }: AppButtonProps) {
+  const isDisabled = loading || disabled;
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.button,
         styles[variant],
-        pressed && styles.pressed,
+        isDisabled && styles.disabled,
+        pressed && !isDisabled && styles.pressed,
         style,
       ]}
       onPress={onPress}
-      disabled={loading}
+      disabled={isDisabled}
     >
       {loading ? (
         <ActivityIndicator color="#FFFFFF" />
@@ -75,7 +80,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   pressed: {
-    opacity: 0.88,
+    opacity: 0.92,
     transform: [{ scale: 0.99 }],
+  },
+  disabled: {
+    opacity: 0.65,
   },
 });

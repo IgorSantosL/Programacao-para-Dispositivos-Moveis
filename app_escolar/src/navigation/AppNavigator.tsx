@@ -14,6 +14,9 @@ import SubjectRegistrationScreen from '../screens/SubjectRegistrationScreen';
 import ReportCardScreen from '../screens/ReportCardScreen';
 import AcademicRecordsScreen from '../screens/AcademicRecordsScreen';
 import StudentPortalScreen from '../screens/StudentPortalScreen';
+import TeacherSubjectsScreen from '../screens/TeacherSubjectsScreen';
+import TeacherSubjectStudentsScreen from '../screens/TeacherSubjectStudentsScreen';
+import TeacherGradeEntryScreen from '../screens/TeacherGradeEntryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -41,6 +44,9 @@ export default function AppNavigator() {
             <Stack.Screen name="StudentRegistration" component={StudentRegistrationScreen} options={{ title: 'Alunos' }} />
             <Stack.Screen name="TeacherRegistration" component={TeacherRegistrationScreen} options={{ title: 'Professores' }} />
             <Stack.Screen name="SubjectRegistration" component={SubjectRegistrationScreen} options={{ title: 'Disciplinas' }} />
+            <Stack.Screen name="TeacherSubjects" component={TeacherSubjectsScreen} options={{ title: 'Módulo de Notas' }} />
+            <Stack.Screen name="TeacherSubjectStudents" component={TeacherSubjectStudentsScreen} options={{ title: 'Alunos da Disciplina' }} />
+            <Stack.Screen name="TeacherGradeEntry" component={TeacherGradeEntryScreen} options={{ title: 'Lançar Notas' }} />
             <Stack.Screen name="AcademicRecords" component={AcademicRecordsScreen} options={{ title: 'Notas e Faltas' }} />
             <Stack.Screen name="ReportCard" component={ReportCardScreen} options={{ title: 'Boletim' }} />
           </>

@@ -11,6 +11,7 @@ const gradeRoutes = require('./routes/gradeRoutes');
 const reportCardRoutes = require('./routes/reportCardRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const externalRoutes = require('./routes/externalRoutes');
+const teacherGradeModuleRoutes = require('./routes/teacherGradeModuleRoutes');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api', gradeRoutes);
 app.use('/api', reportCardRoutes);
 app.use('/api', dashboardRoutes);
 app.use('/api', externalRoutes);
+app.use('/api', teacherGradeModuleRoutes);
 
 const port = Number(process.env.PORT || 3001);
 

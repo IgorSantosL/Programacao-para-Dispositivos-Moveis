@@ -131,3 +131,68 @@ export interface ReportCardResponse {
 export interface ApiMessageResponse {
   message: string;
 }
+
+export interface ProfessorSubjectSummary {
+  id: number;
+  nome: string;
+  curso: string;
+  semestre: string;
+  carga_horaria: number;
+  professor_id: number | null;
+  professor_nome: string | null;
+  total_alunos: number;
+  media_turma: number;
+}
+
+export interface ProfessorDisciplineStudent {
+  id: number;
+  nome: string;
+  matricula: string;
+  curso: string;
+  email: string;
+  nota1: number | null;
+  nota2: number | null;
+  media: number | null;
+  situacao: string | null;
+  faltas: number;
+  total_aulas: number;
+}
+
+export interface GradeEntryDetail {
+  aluno: {
+    id: number;
+    nome: string;
+    matricula: string;
+    curso: string;
+  };
+  disciplina: {
+    id: number;
+    nome: string;
+    semestre: string;
+    carga_horaria: number;
+    professor_nome: string | null;
+  };
+  notas: {
+    nota1: number | null;
+    nota2: number | null;
+    media: number | null;
+    situacao: string | null;
+  };
+  frequencia: {
+    faltas: number;
+    totalAulas: number;
+  };
+}
+
+export interface GradeEntrySaveResponse {
+  message: string;
+  nota: {
+    aluno_id: number;
+    disciplina_id: number;
+    nota1: number;
+    nota2: number;
+    media: number;
+    situacao: string;
+  };
+  boletimAtualizado: ReportCardResponse | null;
+}
